@@ -331,6 +331,12 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("viewPreview").classList.add("hidden");
         document.getElementById("viewUpload").classList.remove("hidden");
         if (fileInput) fileInput.value = "";
+        const scanDetailsSection = document.getElementById("scanDetailsSection");
+        if (scanDetailsSection) scanDetailsSection.classList.add("hidden");
+        const resultContent = document.getElementById("resultContent");
+        if (resultContent) resultContent.classList.add("hidden");
+        const resultEmpty = document.getElementById("resultEmpty");
+        if (resultEmpty) resultEmpty.classList.remove("hidden");
       });
     }
 
@@ -553,6 +559,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Hide heatmap toggle overlay until analysis completes successfully
     document.getElementById("heatmapToggleOverlay").classList.add("hidden");
 
+    const scanDetailsSection = document.getElementById("scanDetailsSection");
+    if (scanDetailsSection) scanDetailsSection.classList.add("hidden");
+    const resultContent = document.getElementById("resultContent");
+    if (resultContent) resultContent.classList.add("hidden");
+    const resultEmpty = document.getElementById("resultEmpty");
+    if (resultEmpty) resultEmpty.classList.remove("hidden");
+
     const btn = document.getElementById("btnStartAnalyze");
     if (btn) {
       btn.disabled = false;
@@ -594,6 +607,11 @@ document.addEventListener("DOMContentLoaded", () => {
   function displayScanResult(data) {
     document.getElementById("resultEmpty").classList.add("hidden");
     document.getElementById("resultContent").classList.remove("hidden");
+
+    const scanDetailsSection = document.getElementById("scanDetailsSection");
+    if (scanDetailsSection) {
+      scanDetailsSection.classList.remove("hidden");
+    }
 
     const score = data.risk_score;
     const riskLevel =

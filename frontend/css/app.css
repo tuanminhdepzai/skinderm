@@ -552,12 +552,13 @@ button { cursor: pointer; border: none; outline: none; transition: var(--transit
     display: grid;
     grid-template-columns: 1.15fr 1fr;
     gap: 2rem;
-    align-items: start; /* Prevent left card from stretching into a giant empty pillar */
+    align-items: stretch;
 }
 
 .scan-capture-card {
-    position: sticky;
-    top: 1.5rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
 }
 
 .upload-area {
@@ -699,6 +700,21 @@ button { cursor: pointer; border: none; outline: none; transition: var(--transit
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+}
+
+/* Detailed ABCDE & Medical Advice Grid (Located Below Scan & Results) */
+.scan-details-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+@media (max-width: 1024px) {
+    .scan-details-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
 }
 
 .score-circle-container {

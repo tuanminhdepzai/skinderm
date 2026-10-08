@@ -263,37 +263,49 @@
                                         <!-- Top Predictions Injected by JS -->
                                     </div>
                                 </div>
-
-                                <!-- ABCDE Rule Evaluation -->
-                                <div style="background: var(--bg-app); border-radius: var(--radius-md); border: 1px solid var(--border-light); padding: 1.15rem;">
-                                    <h4 style="font-size: 0.9rem; margin-bottom: 0.85rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                                        <i class="fa-solid fa-dna" style="color: var(--medical-blue-base);"></i>
-                                        <span>Đánh giá 5 dấu hiệu nốt ruồi (Quy tắc ABCDE):</span>
-                                    </h4>
-                                    <div id="abcdeChartContainer" style="display: flex; flex-direction: column; gap: 0.5rem; cursor: pointer;">
-                                        <!-- ABCDE Bars Injected JS -->
-                                    </div>
-                                    <div id="abcdeDetailBox" style="background: rgba(59, 130, 246, 0.05); border-radius: 8px; padding: 0.75rem 0.9rem; margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-secondary); display: none; border-left: 3px solid var(--medical-blue-base);">
-                                        <strong style="color: var(--medical-blue-dark);">Giải thích:</strong> <span id="abcdeDetailText">Di chuột hoặc chạm vào từng chỉ số để xem giải thích.</span>
-                                    </div>
-                                </div>
-
-                                <!-- Medical Advice -->
-                                <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: var(--radius-md); padding: 1.15rem;">
-                                    <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--medical-blue-dark); display: flex; align-items: center; gap: 8px;">
-                                        <i class="fa-solid fa-user-doctor" style="color: var(--medical-blue-base);"></i>
-                                        <span data-i18n="scan_advice">Lời khuyên Y khoa:</span>
-                                    </h4>
-                                    <div id="medicalAdvice" style="color: var(--text-primary); font-size: 0.88rem; line-height: 1.6;" data-i18n="scan_advice_loading">Hệ thống đang chuẩn bị lời khuyên...</div>
-                                </div>
-
-                                <button class="btn-pill btn-blue w-100" style="justify-content: center; width: 100%; padding: 0.95rem; font-size: 0.95rem; font-weight: 600;" id="btnConsultAI">
-                                    <i class="fa-solid fa-comments"></i> <span data-i18n="btn_consult_ai">Hỏi ý kiến Bác sĩ AI</span>
-                                </button>
                             </div>
                         </div>
                     </div>
                 </div> <!-- Close scan-workspace-layout -->
+
+                <!-- Section: Detailed ABCDE & Medical Advice (Nằm dưới phần phân tích và báo cáo kết quả) -->
+                <div id="scanDetailsSection" class="scan-details-grid hidden">
+                    <!-- Left: ABCDE Analysis Card -->
+                    <div class="card-glass">
+                        <div class="card-header" style="border-bottom: 1px solid var(--border-light); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+                            <i class="fa-solid fa-dna" style="color: var(--medical-blue-base);"></i>
+                            <span>Đánh giá 5 dấu hiệu nốt ruồi bất thường (Quy tắc ABCDE)</span>
+                        </div>
+                        <div class="card-body">
+                            <div id="abcdeChartContainer" style="display: flex; flex-direction: column; gap: 0.65rem; cursor: pointer;">
+                                <!-- ABCDE Bars Injected JS -->
+                            </div>
+                            <div id="abcdeDetailBox" style="background: rgba(59, 130, 246, 0.05); border-radius: 12px; padding: 0.9rem 1.1rem; margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary); display: none; border-left: 4px solid var(--medical-blue-base);">
+                                <strong style="color: var(--medical-blue-dark);">Giải thích:</strong> <span id="abcdeDetailText">Di chuột hoặc chạm vào từng chỉ số để xem phân tích y khoa chi tiết.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Medical Advice & AI Consult Card -->
+                    <div class="card-glass" style="display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div class="card-header" style="border-bottom: 1px solid var(--border-light); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+                                <i class="fa-solid fa-user-doctor" style="color: var(--medical-blue-base);"></i>
+                                <span data-i18n="scan_advice">Khuyến nghị Y khoa chuyên môn</span>
+                            </div>
+                            <div class="card-body">
+                                <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 16px; padding: 1.25rem;">
+                                    <div id="medicalAdvice" style="color: var(--text-primary); font-size: 0.92rem; line-height: 1.65;" data-i18n="scan_advice_loading">Hệ thống đang chuẩn bị lời khuyên...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1.5rem;">
+                            <button class="btn-pill btn-blue w-100" style="justify-content: center; width: 100%; padding: 1rem; font-size: 0.95rem; font-weight: 600;" id="btnConsultAI">
+                                <i class="fa-solid fa-comments"></i> <span data-i18n="btn_consult_ai">Tư vấn sâu hơn với Bác sĩ AI</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="disclaimer-box">
                     <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.8rem;"></i>
