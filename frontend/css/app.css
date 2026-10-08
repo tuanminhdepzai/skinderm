@@ -602,40 +602,34 @@ button { cursor: pointer; border: none; outline: none; transition: var(--transit
     position: relative;
     border-radius: 20px;
     overflow: hidden;
-    background: #0f172a;
+    background: #0b1120;
     width: 100%;
+    height: 340px;
     min-height: 280px;
-    max-height: 400px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.75rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 0;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-light);
 }
 
 #imageWrapper {
     position: relative;
     width: 100%;
     height: 100%;
-    max-height: 380px;
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 14px;
     overflow: hidden;
 }
 
 #imgPreview {
-    max-height: 380px;
-    max-width: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     display: block;
-    border-radius: 10px;
     z-index: 1;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 #imgHeatmapOverlay {
@@ -644,8 +638,7 @@ button { cursor: pointer; border: none; outline: none; transition: var(--transit
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: fill;
-    border-radius: 10px;
+    object-fit: cover;
     opacity: 0;
     transition: opacity 0.2s ease;
     z-index: 2;
@@ -665,93 +658,23 @@ button { cursor: pointer; border: none; outline: none; transition: var(--transit
     z-index: 3;
 }
 
-/* Heatmap & Segmentation Controls Card (Placed between Preview Container & Buttons) */
 #heatmapToggleOverlay {
     position: relative;
     width: 100%;
-    margin-top: 0.85rem;
-    padding: 12px 16px;
+    margin-top: 1rem;
+    padding: 0.85rem 1.15rem;
+    border-radius: 16px;
     background: var(--bg-app);
     border: 1px solid var(--border-light);
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
     gap: 8px;
+    box-shadow: var(--shadow-sm);
     transition: var(--transition);
 }
 
-[data-theme="dark"] #heatmapToggleOverlay {
-    background: rgba(30, 41, 59, 0.8);
-    border-color: rgba(255, 255, 255, 0.12);
-}
-
-.heatmap-toggle-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.heatmap-toggle-title {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.heatmap-opacity-badge {
-    font-size: 0.82rem;
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--medical-blue-base);
-    font-weight: 700;
-    background: rgba(59, 130, 246, 0.12);
-    padding: 2px 8px;
-    border-radius: 6px;
-}
-
-.heatmap-slider {
-    width: 100%;
-    accent-color: var(--medical-blue-base);
-    cursor: pointer;
-    height: 6px;
-    border-radius: 3px;
-    margin: 2px 0;
-}
-
-.heatmap-seg-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 6px;
-    border-top: 1px solid var(--border-light);
-}
-
-.heatmap-seg-label {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.btn-toggle-seg {
-    font-size: 0.75rem;
-    padding: 3px 12px;
-    background: transparent;
-    border: 1px solid var(--border-light);
-    color: var(--text-primary);
-    border-radius: 99px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.btn-toggle-seg:hover {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: var(--medical-blue-base);
-    color: var(--medical-blue-base);
+#heatmapToggleOverlay.hidden {
+    display: none !important;
 }
 
 .scan-laser {

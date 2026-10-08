@@ -186,6 +186,7 @@
 
                         <!-- Preview View -->
                         <div id="viewPreview" class="hidden" style="display: flex; flex-direction: column; width: 100%;">
+                            <!-- 1. Ô ảnh phân tích bao quát thẻ -->
                             <div class="preview-container" id="previewContainer">
                                 <div id="imageWrapper">
                                     <img src="" id="imgPreview" alt="Skin Lesion">
@@ -196,30 +197,30 @@
                                         <path d="M35,35 Q50,20 65,35 T65,65 Q50,80 35,65 Z" fill="rgba(0, 255, 204, 0.1)" stroke="#00ffcc" stroke-width="1.5" stroke-dasharray="2,2"></path>
                                     </svg>
                                 </div>
-                                
                                 <div class="scan-laser"></div>
                             </div>
 
-                            <!-- Heatmap & Segmentation Controls (Placed between Image Preview and Buttons) -->
+                            <!-- 2. Ô lớp phủ nằm giữa ô ảnh phân tích và chữ phân tích lại -->
                             <div id="heatmapToggleOverlay" class="hidden">
-                                <div class="heatmap-toggle-row">
-                                    <span class="heatmap-toggle-title">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
                                         <i class="fa-solid fa-layer-group" style="color: var(--medical-blue-base);"></i>
                                         <span>Lớp phủ Grad-CAM</span>
                                     </span>
-                                    <span id="heatmapOpacityValue" class="heatmap-opacity-badge">0%</span>
+                                    <span id="heatmapOpacityValue" style="font-size: 0.82rem; font-family: 'JetBrains Mono', monospace; color: var(--medical-blue-base); font-weight: 700;">0%</span>
                                 </div>
-                                <input type="range" id="heatmapOpacitySlider" min="0" max="100" value="0" class="heatmap-slider">
+                                <input type="range" id="heatmapOpacitySlider" min="0" max="100" value="0" style="width: 100%; accent-color: var(--medical-blue-base); cursor: pointer; margin-bottom: 6px;">
                                 
-                                <div class="heatmap-seg-row">
-                                    <span class="heatmap-seg-label">
-                                        <i class="fa-solid fa-draw-polygon" style="color: #10b981; font-size: 0.8rem;"></i>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px solid var(--border-light);">
+                                    <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+                                        <i class="fa-solid fa-draw-polygon" style="color: #10b981;"></i>
                                         <span>Viền tổn thương U-Net</span>
                                     </span>
-                                    <button id="toggleSegBtn" class="btn-pill btn-toggle-seg">Hiện</button>
+                                    <button id="toggleSegBtn" class="btn-pill" style="font-size: 0.75rem; padding: 3px 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid var(--medical-blue-base); color: var(--medical-blue-base); font-weight: 600; cursor: pointer;">Hiện</button>
                                 </div>
                             </div>
 
+                            <!-- 3. Hàng nút thao tác (Phân tích lại / Bắt đầu phân tích AI & Đổi ảnh) -->
                             <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
                                 <button class="btn-pill btn-blue" style="flex: 1; justify-content: center;" id="btnStartAnalyze"><i class="fa-solid fa-microscope"></i> <span data-i18n="btn_analyze">Bắt đầu phân tích AI</span></button>
                                 <button class="btn-pill" style="background:var(--bg-app); border: 1px solid var(--border-light);" id="btnCancelPreview" data-i18n="btn_cancel"><i class="fa-solid fa-arrow-rotate-left"></i> Đổi ảnh</button>
