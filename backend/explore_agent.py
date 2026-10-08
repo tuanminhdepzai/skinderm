@@ -33,7 +33,7 @@ def generate_topics(state: AgentState):
         try:
             print(f"[LangGraph] Generating topics - Attempt {attempt + 1}/3...")
             response = nv_client.chat.completions.create(
-                model="meta/llama-3.1-8b-instruct",
+                model="meta/llama-3.2-11b-vision-instruct",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=1024,
                 temperature=0.8,
@@ -85,7 +85,7 @@ def write_blogs(state: AgentState):
         try:
             print(f"[LangGraph] Writing blogs - Attempt {attempt + 1}/3...")
             response = nv_client.chat.completions.create(
-                model="meta/llama-3.1-8b-instruct",
+                model="meta/llama-3.2-11b-vision-instruct",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=3000,
                 temperature=0.7,

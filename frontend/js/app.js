@@ -330,6 +330,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnCancelPreview.addEventListener("click", () => {
         document.getElementById("viewPreview").classList.add("hidden");
         document.getElementById("viewUpload").classList.remove("hidden");
+        if (fileInput) fileInput.value = "";
       });
     }
 
@@ -451,24 +452,49 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function updateWeatherDate() {
+    const weatherDate = document.getElementById("weatherDate");
+    if (!weatherDate) return;
+    const now = new Date();
+    const days = [
+      "Chủ Nhật",
+      "Thứ Hai",
+      "Thứ Ba",
+      "Thứ Tư",
+      "Thứ Năm",
+      "Thứ Sáu",
+      "Thứ Bảy",
+    ];
+    const dayName = days[now.getDay()];
+    const date = now.getDate();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    weatherDate.textContent = `${dayName}, ${date} Tháng ${month}, ${year}`;
+  }
+
   async function updateWeather() {
-    const applyWeatherData = async (lat, lon) => {
+    updateWeatherDate();
+
+    const applyWeatherData = async (lat, lon, knownLocation = null) => {
       try {
-        const data = await WeatherService.getWeatherData(lat, lon);
+        const data = await WeatherService.getWeatherData(lat, lon, knownLocation);
         if (!data) return;
 
-        document.getElementById("tempValue").textContent = Math.round(
-          data.temp,
-        );
-        document.getElementById("uvValue").textContent = data.uvIndex;
-        document.getElementById("weatherLocation").textContent = data.location;
+        const tempEl = document.getElementById("tempValue");
+        const uvEl = document.getElementById("uvValue");
+        const locEl = document.getElementById("weatherLocation");
+        const adviceEl = document.getElementById("weatherAdvice");
+
+        if (tempEl) tempEl.textContent = Math.round(data.temp);
+        if (uvEl) uvEl.textContent = data.uvIndex;
+        if (locEl) locEl.textContent = data.location;
 
         const theme = WeatherService.getWeatherTheme(
           data.weatherCode,
           data.uvIndex,
         );
         const advice = WeatherService.getUVAdvice(data.uvIndex);
-        document.getElementById("weatherAdvice").textContent = advice.advice;
+        if (adviceEl) adviceEl.textContent = advice.advice;
         state.currentWeather = data;
 
         const weatherVideo = document.getElementById("weatherVideo");
@@ -481,19 +507,27 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     };
 
+    // 1. First fast attempt: IP Geolocation (instant & no permissions needed)
+    try {
+      const ipLoc = await WeatherService.detectLocationByIP();
+      if (ipLoc) {
+        await applyWeatherData(ipLoc.lat, ipLoc.lon, ipLoc.locationName);
+      } else {
+        await applyWeatherData(21.0285, 105.8542, "Hà Nội, VN");
+      }
+    } catch (e) {
+      applyWeatherData(21.0285, 105.8542, "Hà Nội, VN");
+    }
+
+    // 2. Second attempt: Check GPS Geolocation for higher precision if user allows
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => applyWeatherData(pos.coords.latitude, pos.coords.longitude),
         (err) => {
-          console.warn(
-            "Geolocation failed, using default (Hanoi):",
-            err.message,
-          );
-          applyWeatherData(21.0285, 105.8542);
+          console.info("Using IP/default location (GPS not granted or unavailable).");
         },
+        { timeout: 8000, maximumAge: 600000 }
       );
-    } else {
-      applyWeatherData(21.0285, 105.8542);
     }
   }
 
@@ -518,6 +552,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("imgPreview").src = state.lastCapturedImage;
     // Hide heatmap toggle overlay until analysis completes successfully
     document.getElementById("heatmapToggleOverlay").classList.add("hidden");
+
+    const btn = document.getElementById("btnStartAnalyze");
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-microscope"></i> <span data-i18n="btn_analyze">Bắt đầu phân tích AI</span>';
+    }
   }
 
   async function startAnalysis() {
@@ -547,7 +587,7 @@ document.addEventListener("DOMContentLoaded", () => {
       container.classList.remove("scanning");
       btn.disabled = false;
       btn.innerHTML =
-        '<i class="fa-solid fa-microscope"></i> Bắt đầu phân tích AI';
+        '<i class="fa-solid fa-rotate-right"></i> Phân tích lại';
     }
   }
 
@@ -570,17 +610,46 @@ document.addEventListener("DOMContentLoaded", () => {
     riskBadge.textContent = riskLevel;
     riskBadge.className = `score-badge ${badgeClass}`;
 
+    // Primary Diagnosis & Confidence Badges
+    const diagLabel = document.getElementById("primaryDiagnosisLabel");
+    if (diagLabel) {
+      diagLabel.textContent = translateDiagnosis(data.classification);
+    }
+
+    const confBadge = document.getElementById("confidenceBadge");
+    if (confBadge) {
+      confBadge.textContent = `Độ tin cậy: ${data.confidence || 0}%`;
+    }
+
+    const scanTimestamp = document.getElementById("scanTimestamp");
+    if (scanTimestamp) {
+      scanTimestamp.textContent = new Date().toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        day: "2-digit",
+        month: "2-digit"
+      });
+    }
+
+    // Top 3 Predictions with Progress Bars
     const topList = document.getElementById("topPredictionsList");
-    topList.innerHTML = data.top3
-      .map(
-        (p) => `
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 500;">${p.label}</span>
-                <span class="pill" style="background: rgba(59, 130, 246, 0.1); color: var(--medical-blue-dark); font-size: 0.75rem;">${p.score}%</span>
-            </div>
-        `,
-      )
-      .join("");
+    if (topList && data.top3) {
+      topList.innerHTML = data.top3
+        .map(
+          (p) => `
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                      <span style="font-weight: 600; color: var(--text-primary);">${p.label}</span>
+                      <span class="pill" style="background: rgba(59, 130, 246, 0.12); color: var(--medical-blue-base); font-weight: 700; font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; padding: 2px 8px;">${p.score}%</span>
+                  </div>
+                  <div style="height: 6px; background: rgba(0, 0, 0, 0.05); border-radius: 99px; overflow: hidden;">
+                      <div style="width: ${Math.min(100, p.score)}%; height: 100%; background: linear-gradient(90deg, var(--medical-blue-base), #3b82f6); border-radius: 99px; transition: width 0.8s ease-out;"></div>
+                  </div>
+              </div>
+          `,
+        )
+        .join("");
+    }
 
     document.getElementById("medicalAdvice").innerHTML = marked.parse(
       CHAT.processAIContent(data.medical_advice || "Chưa có lời khuyên."),

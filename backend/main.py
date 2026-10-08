@@ -855,7 +855,7 @@ async def analyze_image(
     medical_advice = "Hệ thống đang chuẩn bị lời khuyên..."
     try:
         advice_res = nv_client.chat.completions.create(
-            model="meta/llama-3.1-8b-instruct",
+            model="meta/llama-3.2-11b-vision-instruct",
             messages=[{"role": "user", "content": advice_prompt}],
             max_tokens=256,
             temperature=0.3,
@@ -1014,7 +1014,7 @@ async def compare_scans(req: CompareRequest):
     
     try:
         completion = nv_client.chat.completions.create(
-            model="meta/llama-3.1-70b-instruct",
+            model="meta/llama-3.2-90b-vision-instruct",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=2048,
             temperature=0.3
@@ -1037,7 +1037,7 @@ async def compare_scans(req: CompareRequest):
 class ChatRequest(BaseModel):
     message: str
     language: str = "vi"
-    model: str = "meta/llama-3.1-70b-instruct"
+    model: str = "meta/llama-3.2-90b-vision-instruct"
     context: str = ""
 
 @app.post("/api/chat")
@@ -1064,8 +1064,14 @@ async def chat_interaction(chat_req: ChatRequest, request: Request):
 
     async def generate_events():
         try:
+            target_model = chat_req.model
+            if "llama-3.1-8b" in target_model:
+                target_model = "meta/llama-3.2-11b-vision-instruct"
+            elif "llama-3.1-70b" in target_model:
+                target_model = "meta/llama-3.2-90b-vision-instruct"
+
             completion = nv_client.chat.completions.create(
-                model=chat_req.model,
+                model=target_model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": chat_req.message}
