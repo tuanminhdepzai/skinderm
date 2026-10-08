@@ -6,7 +6,7 @@ import state from './state.js';
 
 const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
     ? 'http://localhost:8080/api'
-    : 'https://codebykdvn--skinderm-backend-fastapi-app.modal.run/api';
+    : 'https://tuanminhdepzai--skinderm-backend-fastapi-app.modal.run/api';
 
 const API = {
     /**

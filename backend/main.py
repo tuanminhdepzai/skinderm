@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
 import time
 import datetime
 import asyncio
@@ -711,12 +712,12 @@ class AnalyzeResponse(BaseModel):
     abcde: dict
     bbox: dict
     top3: list
-    image_url: str = None
-    heatmap_url: str = None
-    medical_advice: str = None
-    uv_index: float = None
-    temperature: float = None
-    location: str = None
+    image_url: Optional[str] = None
+    heatmap_url: Optional[str] = None
+    medical_advice: Optional[str] = None
+    uv_index: Optional[float] = None
+    temperature: Optional[float] = None
+    location: Optional[str] = None
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)
 async def analyze_image(
