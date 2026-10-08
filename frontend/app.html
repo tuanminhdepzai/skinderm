@@ -198,21 +198,29 @@
                                 </div>
                                 
                                 <div class="scan-laser"></div>
+                            </div>
+
+                            <!-- Heatmap & Segmentation Controls (Placed between Image Preview and Buttons) -->
+                            <div id="heatmapToggleOverlay" class="hidden">
+                                <div class="heatmap-toggle-row">
+                                    <span class="heatmap-toggle-title">
+                                        <i class="fa-solid fa-layer-group" style="color: var(--medical-blue-base);"></i>
+                                        <span>Lớp phủ Grad-CAM</span>
+                                    </span>
+                                    <span id="heatmapOpacityValue" class="heatmap-opacity-badge">0%</span>
+                                </div>
+                                <input type="range" id="heatmapOpacitySlider" min="0" max="100" value="0" class="heatmap-slider">
                                 
-                                <div id="heatmapToggleOverlay" class="hidden">
-                                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <span style="font-size: 0.8rem; font-weight: 500; color: white;"><i class="fa-solid fa-layer-group" style="margin-right: 5px;"></i> Lớp phủ Grad-CAM</span>
-                                        <span id="heatmapOpacityValue" style="font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; color: var(--primary-lime); font-weight: bold;">0%</span>
-                                    </div>
-                                    <input type="range" id="heatmapOpacitySlider" min="0" max="100" value="0" style="width: 100%; accent-color: var(--primary-lime); cursor: pointer;">
-                                    
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                                        <span style="font-size: 0.75rem; font-weight: 500; color: white;">Viền tổn thương U-Net</span>
-                                        <button id="toggleSegBtn" class="btn-pill" style="font-size: 0.7rem; padding: 2px 8px; background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; cursor: pointer;">Hiện</button>
-                                    </div>
+                                <div class="heatmap-seg-row">
+                                    <span class="heatmap-seg-label">
+                                        <i class="fa-solid fa-draw-polygon" style="color: #10b981; font-size: 0.8rem;"></i>
+                                        <span>Viền tổn thương U-Net</span>
+                                    </span>
+                                    <button id="toggleSegBtn" class="btn-pill btn-toggle-seg">Hiện</button>
                                 </div>
                             </div>
-                            <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+
+                            <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
                                 <button class="btn-pill btn-blue" style="flex: 1; justify-content: center;" id="btnStartAnalyze"><i class="fa-solid fa-microscope"></i> <span data-i18n="btn_analyze">Bắt đầu phân tích AI</span></button>
                                 <button class="btn-pill" style="background:var(--bg-app); border: 1px solid var(--border-light);" id="btnCancelPreview" data-i18n="btn_cancel"><i class="fa-solid fa-arrow-rotate-left"></i> Đổi ảnh</button>
                             </div>
