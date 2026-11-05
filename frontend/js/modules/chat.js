@@ -90,36 +90,72 @@ const CHAT = {
         try {
             updateStatus("Đang đọc dữ liệu chẩn đoán của bạn...");
             
-            let context = "Chưa có dữ liệu scan.";
+            const liveUv = state.currentWeather?.uvIndex !== undefined && state.currentWeather?.uvIndex !== null
+                ? state.currentWeather.uvIndex
+                : null;
+            const liveTemp = state.currentWeather?.temp !== undefined && state.currentWeather?.temp !== null
+                ? state.currentWeather.temp
+                : null;
+            const liveHumidity = state.currentWeather?.humidity !== undefined && state.currentWeather?.humidity !== null
+                ? state.currentWeather.humidity
+                : null;
+            const liveLoc = state.currentWeather?.location || null;
+
+            let context = "";
             if (state.history.length > 0) {
                 const latest = state.history[0];
                 const details = latest.details || {};
+                const abcde = details.abcde || {};
                 
-                // Get weather fields safely from details or current weather state
-                const uv = details.uv_index !== undefined && details.uv_index !== null ? details.uv_index : (state.currentWeather?.uvIndex || "Chưa có dữ liệu");
-                const temp = details.temperature !== undefined && details.temperature !== null ? details.temperature : (state.currentWeather?.temp || "Chưa có dữ liệu");
-                const loc = details.location || (state.currentWeather?.location || "Chưa có dữ liệu");
+                // Prefer live weather, fallback to scan's saved weather
+                const uv = liveUv !== null ? liveUv : (details.uv_index !== undefined && details.uv_index !== null ? details.uv_index : "Chưa có dữ liệu");
+                const temp = liveTemp !== null ? liveTemp : (details.temperature !== undefined && details.temperature !== null ? details.temperature : "Chưa có dữ liệu");
+                const loc = liveLoc || details.location || "Chưa có dữ liệu";
+                const humidityStr = liveHumidity !== null ? `${liveHumidity}%` : "Chưa có dữ liệu";
                 
                 // Format top 3 predictions
                 const top3Str = details.top3 ? details.top3.map(p => `- ${p.label}: ${p.score}%`).join("\n") : "- Không có dữ liệu top 3";
+
+                // Support both fresh scan ABCDE format and Firestore history ABCDE format
+                const aScore = abcde.A_asymmetry?.score ?? abcde.A_score ?? 0;
+                const aStatus = abcde.A_asymmetry?.status ?? (aScore > 50 ? "High" : "Low");
+                const bScore = abcde.B_border?.score ?? abcde.B_score ?? 0;
+                const bStatus = abcde.B_border?.status ?? (bScore > 50 ? "Abnormal" : "Normal");
+                const cScore = abcde.C_color?.score ?? abcde.C_score ?? 0;
+                const cStatus = abcde.C_color?.status ?? (cScore > 50 ? "Moderate" : "Uniform");
+                const dScore = abcde.D_diameter?.score ?? abcde.D_score ?? 0;
+                const dValue = abcde.D_diameter?.value ?? Math.round((dScore / 10.0) * 10) / 10;
+                const eScore = abcde.E_evolution?.score ?? abcde.E_score ?? 0;
+                const eStatus = abcde.E_evolution?.status ?? "Cần lịch sử";
                 
                 context = `
 === THÔNG TIN BỆNH NHÂN & LỊCH SỬ CHẨN ĐOÁN CHI TIẾT ===
 - Chẩn đoán chính: ${latest.diagnosis || "Chưa xác định"} (Độ tin cậy: ${details.confidence || 0}%)
-- Mức độ rủi ro tổng hợp: ${latest.risk || 0}%
+- Mức độ rủi ro tổng hợp: ${latest.risk ?? 0}%
 - Top 3 nguy cơ hàng đầu:
 ${top3Str}
 - Phân tích chuẩn ABCDE:
-  + A (Asymmetry - Bất đối xứng): ${details.abcde?.A_asymmetry?.score || 0}% - Trạng thái: ${details.abcde?.A_asymmetry?.status || "Bình thường"}
-  + B (Border - Đường viền): ${details.abcde?.B_border?.score || 0}% - Trạng thái: ${details.abcde?.B_border?.status || "Bình thường"}
-  + C (Color - Màu sắc): ${details.abcde?.C_color?.score || 0}% - Trạng thái: ${details.abcde?.C_color?.status || "Đều màu"}
-  + D (Diameter - Đường kính): ${details.abcde?.D_diameter?.score || 0}% - Chiều dài: ${details.abcde?.D_diameter?.value || 3.0}mm
-  + E (Evolution - Tiến triển): ${details.abcde?.E_evolution?.score || 0}% - Trạng thái: ${details.abcde?.E_evolution?.status || "Cần lịch sử"}
-- Tình trạng thời tiết & môi trường xung quanh:
-  + Chỉ số tia cực tím (UV Index): ${uv}
-  + Nhiệt độ môi trường: ${temp}°C
+  + A (Asymmetry - Bất đối xứng): ${aScore}% - Trạng thái: ${aStatus}
+  + B (Border - Đường viền): ${bScore}% - Trạng thái: ${bStatus}
+  + C (Color - Màu sắc): ${cScore}% - Trạng thái: ${cStatus}
+  + D (Diameter - Đường kính): ${dScore}% - Chiều dài: ${dValue}mm
+  + E (Evolution - Tiến triển): ${eScore}% - Trạng thái: ${eStatus}
+- Tình trạng thời tiết & môi trường hiện tại của người dùng:
   + Vị trí địa lý: ${loc}
+  + Nhiệt độ môi trường hiện tại: ${temp}°C
+  + Độ ẩm không khí: ${humidityStr}
+  + Chỉ số tia cực tím (UV Index) hiện tại: ${uv}
 - Lời khuyên ban đầu từ mô hình AI: "${details.medical_advice || "Không có"}"
+======================================================
+`;
+            } else {
+                context = `
+=== THÔNG TIN THỜI TIẾT & MÔI TRƯỜNG HIỆN TẠI CỦA NGƯỜI DÙNG ===
+- Trạng thái hồ sơ quét da: Người dùng chưa thực hiện quét ảnh da nào.
+- Vị trí địa lý hiện tại: ${liveLoc || "Chưa xác định"}
+- Nhiệt độ môi trường hiện tại: ${liveTemp !== null ? `${liveTemp}°C` : "Chưa có dữ liệu"}
+- Độ ẩm không khí hiện tại: ${liveHumidity !== null ? `${liveHumidity}%` : "Chưa có dữ liệu"}
+- Chỉ số tia cực tím (UV Index) hiện tại: ${liveUv !== null ? liveUv : "Chưa có dữ liệu"}
 ======================================================
 `;
             }
