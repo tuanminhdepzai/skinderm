@@ -1017,10 +1017,11 @@ async def compare_scans(req: CompareRequest):
     
     try:
         completion = nv_client.chat.completions.create(
-            model="nvidia/nemotron-3.5-super-vl-120b-a12b",
+            model="nvidia/nemotron-3.5-bolt-e4b",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=4096,
-            temperature=0.3
+            temperature=0.3,
+            timeout=60.0
         )
         report = (completion.choices[0].message.content or "").strip()
         if not report:
