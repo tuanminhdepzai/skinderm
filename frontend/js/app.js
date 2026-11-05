@@ -580,13 +580,15 @@ document.addEventListener("DOMContentLoaded", () => {
           locEl.textContent = data.location;
         }
 
+        const isDay = data.isDay !== undefined ? data.isDay : (new Date().getHours() >= 6 && new Date().getHours() < 18);
         const theme = WeatherService.getWeatherTheme(
           data.weatherCode,
           data.uvIndex,
+          isDay,
         );
-        const advice = WeatherService.getUVAdvice(data.uvIndex);
+        const advice = WeatherService.getUVAdvice(data.uvIndex, isDay);
         if (adviceEl) {
-          adviceEl.textContent = `UV ${advice.level}: ${advice.advice}`;
+          adviceEl.textContent = `${theme.label} • UV ${advice.level}: ${advice.advice}`;
         }
         if (uvBadge && advice.color) {
           uvBadge.style.color = advice.color;
@@ -596,7 +598,16 @@ document.addEventListener("DOMContentLoaded", () => {
         state.currentWeather = data;
 
         const weatherVideo = document.getElementById("weatherVideo");
+        const weatherOverlay = document.querySelector(".weather-overlay");
+        if (weatherOverlay) {
+          weatherOverlay.style.background = theme.isNight
+            ? "linear-gradient(135deg, rgba(2, 6, 23, 0.88) 0%, rgba(15, 23, 42, 0.72) 100%)"
+            : "linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(15, 23, 42, 0.2) 100%)";
+        }
         if (weatherVideo && theme.video) {
+          weatherVideo.style.filter = theme.isNight
+            ? "brightness(0.45) saturate(0.8) hue-rotate(15deg)"
+            : "none";
           const targetSrc = `assets/video/${theme.video}`;
           const sourceEl = weatherVideo.querySelector("source");
           const currentSrc = (sourceEl && sourceEl.getAttribute("src")) || weatherVideo.getAttribute("src") || "";

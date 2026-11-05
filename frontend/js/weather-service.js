@@ -65,16 +65,23 @@ class WeatherService {
      */
     async getWeatherData(lat = 21.0285, lon = 105.8542, knownLocation = null) {
         try {
-            const url = `${this.baseUrl}?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,uv_index&hourly=uv_index&timezone=auto&forecast_days=1`;
+            const url = `${this.baseUrl}?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,uv_index,is_day&hourly=uv_index&timezone=auto&forecast_days=1`;
             const response = await fetch(url, { cache: "no-store" });
             if (!response.ok) throw new Error("Weather API Error");
             
             const data = await response.json();
             
-            // Get real-time UV index from current block (15-min resolution), fallback to hourly
+            // Determine day/night from Open-Meteo is_day (1 = day, 0 = night), fallback to local clock
             const hour = new Date().getHours();
+            const isDay = (data.current && typeof data.current.is_day === "number")
+                ? data.current.is_day === 1
+                : (hour >= 6 && hour < 18);
+
+            // Get real-time UV index from current block (15-min resolution), fallback to hourly
             let uvIndex = 0;
-            if (data.current && typeof data.current.uv_index === "number") {
+            if (!isDay) {
+                uvIndex = 0;
+            } else if (data.current && typeof data.current.uv_index === "number") {
                 uvIndex = data.current.uv_index;
             } else if (data.hourly && data.hourly.uv_index) {
                 uvIndex = data.hourly.uv_index[hour] ?? 0;
@@ -92,6 +99,7 @@ class WeatherService {
                 humidity: data.current.relative_humidity_2m,
                 weatherCode: data.current.weather_code,
                 uvIndex: uvIndex,
+                isDay: isDay,
                 location: locationName || "Việt Nam",
                 updatedAt: data.current.time
             };
@@ -141,7 +149,15 @@ class WeatherService {
         return "Vị trí hiện tại";
     }
 
-    getUVAdvice(uvIndex) {
+    getUVAdvice(uvIndex, isDay = true) {
+        if (!isDay) {
+            return {
+                level: "Ban đêm",
+                advice: "Trời tối không có tia UV. Thời điểm lý tưởng để làm sạch và dưỡng ẩm phục hồi da.",
+                color: "#38bdf8",
+                video: "cloudy.mp4"
+            };
+        }
         if (uvIndex < 3) return { level: "Thấp", advice: "An toàn để ra ngoài. Cần dưỡng ẩm nhẹ.", color: "#10b981", video: "Mesh_strips_wave,_202603211318.mp4" };
         if (uvIndex < 6) return { level: "Trung bình", advice: "Nên che chắn khi ra ngoài lâu. Dùng kem chống nắng SPF 30+.", color: "#f59e0b", video: "Mesh_strips_wave,_202603211318.mp4" };
         if (uvIndex < 8) return { level: "Cao", advice: "Nguy cơ tổn thương da cao. Tránh nắng từ 10h-16h. Dùng SPF 50+.", color: "#ef4444", video: "sunny.mp4" };
@@ -149,19 +165,31 @@ class WeatherService {
     }
 
     /**
-     * Map Open-Meteo weather codes to a theme (video background).
+     * Map Open-Meteo weather codes & day/night status to a theme (video background).
      * @param {number} code 
      * @param {number} uvIndex
+     * @param {boolean} isDay
      */
-    getWeatherTheme(code, uvIndex = 0) {
-        if (uvIndex >= 6 && code <= 3) {
-            return { type: "sunny", label: "Trời rất nắng", video: "sunny.mp4" };
+    getWeatherTheme(code, uvIndex = 0, isDay = true) {
+        if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || (code >= 95)) {
+            return { type: "rainy", label: isDay ? "Trời mưa" : "Đêm có mưa", video: "rainy.mp4", isNight: !isDay };
         }
-        if (code === 0 || code === 1 || code === 2) return { type: "sunny", label: "Trời nắng", video: "sunny.mp4" };
-        if (code === 3) return { type: "cloudy", label: "Trời râm", video: "cloudy.mp4" };
-        if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || (code >= 95)) 
-            return { type: "rainy", label: "Trời mưa", video: "rainy.mp4" };
-        return { type: "dull", label: "Trời âm u", video: "cloudy.mp4" };
+        if (!isDay) {
+            if (code === 0 || code === 1) {
+                return { type: "night_clear", label: "Đêm quang đãng", video: "cloudy.mp4", isNight: true };
+            }
+            return { type: "night_cloudy", label: "Đêm nhiều mây", video: "cloudy.mp4", isNight: true };
+        }
+        if (uvIndex >= 6 && code <= 3) {
+            return { type: "sunny", label: "Trời rất nắng", video: "sunny.mp4", isNight: false };
+        }
+        if (code === 0 || code === 1 || code === 2) {
+            return { type: "sunny", label: "Trời nắng", video: "sunny.mp4", isNight: false };
+        }
+        if (code === 3) {
+            return { type: "cloudy", label: "Trời râm", video: "cloudy.mp4", isNight: false };
+        }
+        return { type: "dull", label: "Trời âm u", video: "cloudy.mp4", isNight: false };
     }
 }
 
