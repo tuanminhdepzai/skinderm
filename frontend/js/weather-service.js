@@ -153,9 +153,9 @@ class WeatherService {
         if (!isDay) {
             return {
                 level: "Ban đêm",
-                advice: "Trời tối không có tia UV. Thời điểm lý tưởng để làm sạch và dưỡng ẩm phục hồi da.",
+                advice: "An toàn với tia UV. Thời điểm lý tưởng để làm sạch và dưỡng ẩm phục hồi da.",
                 color: "#38bdf8",
-                video: "cloudy.mp4"
+                video: "Mesh_strips_wave,_202603211318.mp4"
             };
         }
         if (uvIndex < 3) return { level: "Thấp", advice: "An toàn để ra ngoài. Cần dưỡng ẩm nhẹ.", color: "#10b981", video: "Mesh_strips_wave,_202603211318.mp4" };
@@ -172,24 +172,42 @@ class WeatherService {
      */
     getWeatherTheme(code, uvIndex = 0, isDay = true) {
         if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || (code >= 95)) {
-            return { type: "rainy", label: isDay ? "Trời mưa" : "Đêm có mưa", video: "rainy.mp4", isNight: !isDay };
+            return {
+                type: "rainy",
+                label: isDay ? "Trời mưa" : "Đêm có mưa",
+                icon: "fa-solid fa-cloud-showers-heavy",
+                video: "rainy.mp4",
+                isNight: !isDay
+            };
         }
         if (!isDay) {
             if (code === 0 || code === 1) {
-                return { type: "night_clear", label: "Đêm quang đãng", video: "cloudy.mp4", isNight: true };
+                return {
+                    type: "night_clear",
+                    label: "Đêm quang đãng",
+                    icon: "fa-solid fa-moon",
+                    video: "Mesh_strips_wave,_202603211318.mp4",
+                    isNight: true
+                };
             }
-            return { type: "night_cloudy", label: "Đêm nhiều mây", video: "cloudy.mp4", isNight: true };
+            return {
+                type: "night_cloudy",
+                label: "Đêm dịu mát",
+                icon: "fa-solid fa-cloud-moon",
+                video: "Mesh_strips_wave,_202603211318.mp4",
+                isNight: true
+            };
         }
         if (uvIndex >= 6 && code <= 3) {
-            return { type: "sunny", label: "Trời rất nắng", video: "sunny.mp4", isNight: false };
+            return { type: "sunny", label: "Trời rất nắng", icon: "fa-solid fa-sun", video: "sunny.mp4", isNight: false };
         }
         if (code === 0 || code === 1 || code === 2) {
-            return { type: "sunny", label: "Trời nắng", video: "sunny.mp4", isNight: false };
+            return { type: "sunny", label: "Trời nắng", icon: "fa-solid fa-cloud-sun", video: "sunny.mp4", isNight: false };
         }
         if (code === 3) {
-            return { type: "cloudy", label: "Trời râm", video: "cloudy.mp4", isNight: false };
+            return { type: "cloudy", label: "Trời nhiều mây", icon: "fa-solid fa-cloud", video: "cloudy.mp4", isNight: false };
         }
-        return { type: "dull", label: "Trời âm u", video: "cloudy.mp4", isNight: false };
+        return { type: "dull", label: "Trời dịu mát", icon: "fa-solid fa-cloud", video: "cloudy.mp4", isNight: false };
     }
 }
 

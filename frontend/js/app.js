@@ -588,25 +588,32 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         const advice = WeatherService.getUVAdvice(data.uvIndex, isDay);
         if (adviceEl) {
-          adviceEl.textContent = `${theme.label} • UV ${advice.level}: ${advice.advice}`;
+          adviceEl.textContent = advice.advice;
         }
+
+        const skyLabel = document.getElementById("weatherSkyLabel");
+        const skyIcon = document.getElementById("weatherSkyIcon");
+        const weatherCard = document.getElementById("weatherCard");
+        if (skyLabel) skyLabel.textContent = theme.label;
+        if (skyIcon && theme.icon) {
+          skyIcon.className = theme.icon;
+          skyIcon.style.color = theme.isNight ? "#bae6fd" : "#fde047";
+        }
+        if (weatherCard) {
+          weatherCard.classList.toggle("night-theme", Boolean(theme.isNight));
+        }
+
         if (uvBadge && advice.color) {
           uvBadge.style.color = advice.color;
-          uvBadge.style.background = `${advice.color}33`;
+          uvBadge.style.background = `${advice.color}28`;
           uvBadge.style.border = `1px solid ${advice.color}55`;
         }
         state.currentWeather = data;
 
         const weatherVideo = document.getElementById("weatherVideo");
-        const weatherOverlay = document.querySelector(".weather-overlay");
-        if (weatherOverlay) {
-          weatherOverlay.style.background = theme.isNight
-            ? "linear-gradient(135deg, rgba(2, 6, 23, 0.88) 0%, rgba(15, 23, 42, 0.72) 100%)"
-            : "linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(15, 23, 42, 0.2) 100%)";
-        }
         if (weatherVideo && theme.video) {
           weatherVideo.style.filter = theme.isNight
-            ? "brightness(0.45) saturate(0.8) hue-rotate(15deg)"
+            ? "brightness(1.08) saturate(1.25) contrast(1.05)"
             : "none";
           const targetSrc = `assets/video/${theme.video}`;
           const sourceEl = weatherVideo.querySelector("source");

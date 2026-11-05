@@ -89,27 +89,34 @@
                 </div>
 
                 <div class="dashboard-grid">
-                    <div class="weather-card">
+                    <div class="weather-card" id="weatherCard">
                         <div class="weather-video-container" id="weatherVidContainer">
                             <video autoplay muted loop playsinline id="weatherVideo">
-                                <source src="assets/video/cloudy.mp4" type="video/mp4">
+                                <source src="assets/video/Mesh_strips_wave,_202603211318.mp4" type="video/mp4">
                             </video>
                         </div>
                         <div class="weather-overlay"></div>
+                        <div class="weather-night-decor"></div>
                         <div class="weather-content">
-                            <div>
-                                <h3 id="weatherLocation" style="font-size: 1.25rem;">Hà Nội, VN</h3>
-                                <p id="weatherDate" style="font-size: 0.85rem; opacity: 0.9;">Thứ Hai, 13 Tháng 4</p>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div>
+                                    <h3 id="weatherLocation" style="font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">Hà Nội, VN</h3>
+                                    <p id="weatherDate" style="font-size: 0.85rem; opacity: 0.9;">Thứ Hai, 13 Tháng 4</p>
+                                </div>
+                                <div id="weatherSkyBadge" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 99px; background: rgba(255, 255, 255, 0.14); backdrop-filter: blur(8px); font-size: 0.78rem; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.2);">
+                                    <i class="fa-solid fa-cloud-sun" id="weatherSkyIcon"></i>
+                                    <span id="weatherSkyLabel">Đang tải...</span>
+                                </div>
                             </div>
-                            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem;">
                                 <div style="font-size: 3.5rem; font-weight: 800; line-height: 1;">
                                     <span id="tempValue">--</span>°C
                                 </div>
-                                <div style="text-align: right;">
-                                    <div class="pill pill-success" id="uvBadge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; margin-bottom: 5px; backdrop-filter: blur(5px);">
+                                <div style="text-align: right; max-width: 260px;">
+                                    <div class="pill pill-success" id="uvBadge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; margin-bottom: 6px; backdrop-filter: blur(5px);">
                                         UV Index: <span id="uvValue">--</span>
                                     </div>
-                                    <p id="weatherAdvice" style="font-size: 0.85rem; max-width: 200px; font-weight: 500;">Đang tải lời khuyên thời tiết...</p>
+                                    <p id="weatherAdvice" style="font-size: 0.84rem; line-height: 1.45; font-weight: 500; text-wrap: balance;">Đang tải lời khuyên thời tiết...</p>
                                 </div>
                             </div>
                         </div>
@@ -628,6 +635,6 @@
     </div>
 
     <!-- MAIN APP JS -->
-    <script type="module" src="js/app.js?v=2.0.5"></script>
+    <script type="module" src="js/app.js?v=2.0.6"></script>
 </body>
 </html>
