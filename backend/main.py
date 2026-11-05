@@ -36,10 +36,10 @@ load_dotenv()
 app = FastAPI(title="Skinderm AI Backend API", version="1.0.0")
 
 # --- NVIDIA AI Client ---
-NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "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")
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "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")
 nv_client = OpenAI(
   base_url = "https://integrate.api.nvidia.com/v1",
-  api_key = NVIDIA_API_KEY if NVIDIA_API_KEY else "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",
+  api_key = NVIDIA_API_KEY if NVIDIA_API_KEY else "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",
   timeout = 30.0,
   max_retries = 0
 )
@@ -856,13 +856,15 @@ async def analyze_image(
     medical_advice = "Hệ thống đang chuẩn bị lời khuyên..."
     try:
         advice_res = nv_client.chat.completions.create(
-            model="meta/llama-3.2-11b-vision-instruct",
+            model="nvidia/nemotron-3.5-bolt-e4b",
             messages=[{"role": "user", "content": advice_prompt}],
-            max_tokens=256,
+            max_tokens=512,
             temperature=0.3,
             stream=False
         )
-        medical_advice = advice_res.choices[0].message.content.strip()
+        medical_advice = (advice_res.choices[0].message.content or "").strip()
+        if not medical_advice:
+            raise ValueError("Empty medical advice returned")
     except Exception as e:
         print(f"[WARN] Failed to generate AI advice: {e}")
         medical_advice = "Cảnh báo: AI phát hiện dấu hiệu bất thường. Hãy đặt lịch hẹn với bác sĩ da liễu để kiểm tra chi tiết." if base_risk > 50 else "Kết quả cho thấy nguy cơ thấp. Hãy tiếp tục theo dõi định kỳ."
@@ -1015,12 +1017,14 @@ async def compare_scans(req: CompareRequest):
     
     try:
         completion = nv_client.chat.completions.create(
-            model="meta/llama-3.2-90b-vision-instruct",
+            model="nvidia/nemotron-3.5-super-vl-120b-a12b",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=2048,
+            max_tokens=4096,
             temperature=0.3
         )
-        report = completion.choices[0].message.content.strip()
+        report = (completion.choices[0].message.content or "").strip()
+        if not report:
+            raise ValueError("Empty comparison report returned")
         return {"status": "success", "report": report}
     except Exception as e:
         print(f"[ERROR] LLM Compare error: {e}")
@@ -1038,7 +1042,7 @@ async def compare_scans(req: CompareRequest):
 class ChatRequest(BaseModel):
     message: str
     language: str = "vi"
-    model: str = "meta/llama-3.2-90b-vision-instruct"
+    model: str = "nvidia/nemotron-3.5-super-vl-120b-a12b"
     context: str = ""
 
 @app.post("/api/chat")
@@ -1066,44 +1070,80 @@ async def chat_interaction(chat_req: ChatRequest, request: Request):
     async def generate_events():
         try:
             target_model = chat_req.model
-            if "llama-3.1-8b" in target_model:
-                target_model = "meta/llama-3.2-11b-vision-instruct"
-            elif "llama-3.1-70b" in target_model:
-                target_model = "meta/llama-3.2-90b-vision-instruct"
+            if any(x in target_model for x in ["llama-3.1-8b", "llama-3.2-11b", "bolt"]):
+                target_model = "nvidia/nemotron-3.5-bolt-e4b"
+            elif any(x in target_model for x in ["llama-3.1-70b", "llama-3.2-90b", "super", "nemotron"]):
+                target_model = "nvidia/nemotron-3.5-super-vl-120b-a12b"
+            else:
+                target_model = "nvidia/nemotron-3.5-super-vl-120b-a12b"
 
-            completion = nv_client.chat.completions.create(
-                model=target_model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": chat_req.message}
-                ],
-                temperature=0.4,
-                top_p=0.9,
-                max_tokens=4096, # Set to reasonable limit
-                stream=True,
-                timeout=180.0
-            )
+            models_to_try = [target_model]
+            if target_model != "nvidia/nemotron-3.5-bolt-e4b":
+                models_to_try.append("nvidia/nemotron-3.5-bolt-e4b")
 
-            for chunk in completion:
-                # Check if client is still there
-                if await request.is_disconnected():
-                    print("[INFO] Client disconnected. Stopping generation.")
-                    break
-
+            last_err = None
+            for m in models_to_try:
                 try:
-                    if not getattr(chunk, "choices", None): continue
-                    content = chunk.choices[0].delta.content
-                    if content:
-                        data = {"choices": [{"delta": {"content": content}}]}
-                        yield f"data: {json.dumps(data)}\n\n"
-                except Exception:
-                    break
+                    completion = nv_client.chat.completions.create(
+                        model=m,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": chat_req.message}
+                        ],
+                        temperature=0.4,
+                        top_p=0.9,
+                        max_tokens=4096,
+                        stream=True,
+                        timeout=60.0
+                    )
 
-            yield "data: [DONE]\n\n"
+                    in_thinking = False
+                    has_yielded = False
+                    for chunk in completion:
+                        if await request.is_disconnected():
+                            print("[INFO] Client disconnected. Stopping generation.")
+                            return
+
+                        if not getattr(chunk, "choices", None):
+                            continue
+                        delta_obj = chunk.choices[0].delta
+                        reasoning = getattr(delta_obj, "reasoning_content", None)
+                        content = getattr(delta_obj, "content", None)
+
+                        out_text = ""
+                        if reasoning:
+                            if not in_thinking:
+                                out_text += "<think>"
+                                in_thinking = True
+                            out_text += reasoning
+                        if content:
+                            if in_thinking:
+                                out_text += "</think>"
+                                in_thinking = False
+                            out_text += content
+
+                        if out_text:
+                            has_yielded = True
+                            data = {"choices": [{"delta": {"content": out_text, "reasoning_content": reasoning}}]}
+                            yield f"data: {json.dumps(data)}\n\n"
+
+                    if in_thinking:
+                        yield f"data: {json.dumps({'choices': [{'delta': {'content': '</think>'}}]})}\n\n"
+
+                    if has_yielded:
+                        yield "data: [DONE]\n\n"
+                        return
+                except Exception as model_err:
+                    print(f"[WARN] Chat model {m} failed: {model_err}")
+                    last_err = model_err
+                    continue
+
+            if last_err:
+                raise last_err
 
         except Exception as e:
             print(f"Streaming Error: {e}")
-            yield f'data: {{"error": "{str(e)}"}}\n\n'
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(generate_events(), media_type="text/event-stream")
 

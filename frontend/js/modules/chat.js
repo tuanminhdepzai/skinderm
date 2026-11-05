@@ -130,72 +130,81 @@ ${top3Str}
             if (!response.ok) throw new Error("Lỗi kết nối máy chủ AI");
 
             const reader = response.body.getReader();
-            const decoder = new TextDecoder();
+            const decoder = new TextDecoder("utf-8");
             
             let fullAiRes = "";
             let thoughtElement = null;
             let contentElement = null;
+            let sseBuffer = "";
 
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
                 
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
+                sseBuffer += decoder.decode(value, { stream: true });
+                const lines = sseBuffer.split('\n');
+                sseBuffer = lines.pop() || "";
                 
-                for (const line of lines) {
+                for (const rawLine of lines) {
+                    const line = rawLine.trim();
                     if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+                        let data;
                         try {
-                            const data = JSON.parse(line.slice(6));
-                            if (data.error) throw new Error(data.error);
-                            
-                            const delta = data.choices[0].delta.content || "";
-                            if (delta) {
-                                fullAiRes += delta;
-
-                                // Extract Thought process
-                                const thoughtMatch = fullAiRes.match(/(?:\(think\)|<think>|<thought>)([\s\S]*?)(?:\(\/think\)|<\/think>|<\/thought>|$)/);
-                                if (thoughtMatch) {
-                                    if (!thoughtElement) {
-                                        updateStatus("AI đang suy nghĩ...");
-                                        thoughtElement = document.createElement('div');
-                                        thoughtElement.className = 'msg-thinking-container';
-                                        if (!state.isThinkingEnabled) thoughtElement.classList.add('hidden-thinking');
-                                        
-                                        thoughtElement.innerHTML = `<div class="msg-thinking-header"><i class="fa-solid fa-brain"></i> Quá trình suy nghĩ <i class="fa-solid fa-chevron-down" style="margin-left: auto; font-size: 0.7rem;"></i></div><div class="msg-thinking-content"></div>`;
-                                        
-                                        if(contentElement) aiBubble.insertBefore(thoughtElement, contentElement);
-                                        else aiBubble.appendChild(thoughtElement);
-
-                                        thoughtElement.querySelector('.msg-thinking-header').addEventListener('click', () => {
-                                            const content = thoughtElement.querySelector('.msg-thinking-content');
-                                            content.style.display = content.style.display === 'none' ? 'block' : 'none';
-                                        });
-                                    }
-                                    thoughtElement.querySelector('.msg-thinking-content').innerHTML = marked.parse(thoughtMatch[1]);
-                                }
-
-                                // Main Content
-                                let displayContent = fullAiRes.replace(/(?:\(think\)|<think>|<thought>)[\s\S]*?(?:\(\/think\)|<\/think>|<\/thought>|$)/g, '').trim();
-                                if (displayContent) {
-                                    if(thinkingVideo.classList.contains('active')) {
-                                        thinkingVideo.classList.remove('active');
-                                        updateStatus("AI đang soạn câu trả lời...");
-                                    }
-
-                                    if (!contentElement) {
-                                        contentElement = document.createElement('div');
-                                        contentElement.className = 'msg-final-content is-typing';
-                                        aiBubble.appendChild(contentElement);
-                                    }
-                                    
-                                    contentElement.innerHTML = marked.parse(this.processAIContent(displayContent));
-                                }
-
-                                chatHistory.scrollTop = chatHistory.scrollHeight;
-                            }
+                            data = JSON.parse(line.slice(6));
                         } catch (e) {
                             console.error("Stream parse error:", e);
+                            continue;
+                        }
+
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+                        
+                        const deltaObj = data.choices?.[0]?.delta || {};
+                        const delta = deltaObj.content || "";
+                        if (delta) {
+                            fullAiRes += delta;
+
+                            // Extract Thought process
+                            const thoughtMatch = fullAiRes.match(/(?:\(think\)|<think>|<thought>)([\s\S]*?)(?:\(\/think\)|<\/think>|<\/thought>|$)/);
+                            if (thoughtMatch) {
+                                if (!thoughtElement) {
+                                    updateStatus("AI đang suy nghĩ...");
+                                    thoughtElement = document.createElement('div');
+                                    thoughtElement.className = 'msg-thinking-container';
+                                    if (!state.isThinkingEnabled) thoughtElement.classList.add('hidden-thinking');
+                                    
+                                    thoughtElement.innerHTML = `<div class="msg-thinking-header"><i class="fa-solid fa-brain"></i> Quá trình suy nghĩ <i class="fa-solid fa-chevron-down" style="margin-left: auto; font-size: 0.7rem;"></i></div><div class="msg-thinking-content"></div>`;
+                                    
+                                    if(contentElement) aiBubble.insertBefore(thoughtElement, contentElement);
+                                    else aiBubble.appendChild(thoughtElement);
+
+                                    thoughtElement.querySelector('.msg-thinking-header').addEventListener('click', () => {
+                                        const content = thoughtElement.querySelector('.msg-thinking-content');
+                                        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+                                    });
+                                }
+                                thoughtElement.querySelector('.msg-thinking-content').innerHTML = marked.parse(thoughtMatch[1]);
+                            }
+
+                            // Main Content
+                            let displayContent = fullAiRes.replace(/(?:\(think\)|<think>|<thought>)[\s\S]*?(?:\(\/think\)|<\/think>|<\/thought>|$)/g, '').trim();
+                            if (displayContent) {
+                                if(thinkingVideo.classList.contains('active')) {
+                                    thinkingVideo.classList.remove('active');
+                                    updateStatus("AI đang soạn câu trả lời...");
+                                }
+
+                                if (!contentElement) {
+                                    contentElement = document.createElement('div');
+                                    contentElement.className = 'msg-final-content is-typing';
+                                    aiBubble.appendChild(contentElement);
+                                }
+                                
+                                contentElement.innerHTML = marked.parse(this.processAIContent(displayContent));
+                            }
+
+                            chatHistory.scrollTop = chatHistory.scrollHeight;
                         }
                     }
                 }
@@ -210,6 +219,16 @@ ${top3Str}
                 contentElement.classList.remove('is-typing');
                 let displayContent = fullAiRes.replace(/(?:\(think\)|<think>|<thought>)[\s\S]*?(?:\(\/think\)|<\/think>|<\/thought>|$)/g, '').trim();
                 contentElement.innerHTML = marked.parse(this.processAIContent(displayContent));
+            } else {
+                let displayContent = fullAiRes.replace(/(?:\(think\)|<think>|<thought>)[\s\S]*?(?:\(\/think\)|<\/think>|<\/thought>|$)/g, '').trim();
+                if (displayContent) {
+                    contentElement = document.createElement('div');
+                    contentElement.className = 'msg-final-content';
+                    contentElement.innerHTML = marked.parse(this.processAIContent(displayContent));
+                    aiBubble.appendChild(contentElement);
+                } else if (!thoughtElement) {
+                    aiBubble.innerHTML += `<div style="color:var(--warning); font-size: 0.85rem; margin-top:10px;"><i class="fa-solid fa-circle-info"></i> Hệ thống AI chưa trả về nội dung. Vui lòng thử gửi lại tin nhắn.</div>`;
+                }
             }
 
         } catch (err) {

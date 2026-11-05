@@ -5,10 +5,10 @@ from langgraph.graph import StateGraph, END
 from openai import OpenAI
 
 # We use the existing NVIDIA client configuration to stay consistent.
-NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "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")
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "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")
 nv_client = OpenAI(
   base_url = "https://integrate.api.nvidia.com/v1",
-  api_key = NVIDIA_API_KEY if NVIDIA_API_KEY else "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",
+  api_key = NVIDIA_API_KEY if NVIDIA_API_KEY else "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",
   timeout = 90.0, # Increased for complex LangGraph chains
   max_retries = 1
 )
@@ -33,11 +33,11 @@ def generate_topics(state: AgentState):
         try:
             print(f"[LangGraph] Generating topics - Attempt {attempt + 1}/3...")
             response = nv_client.chat.completions.create(
-                model="meta/llama-3.2-11b-vision-instruct",
+                model="nvidia/nemotron-3.5-bolt-e4b",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=1024,
                 temperature=0.8,
-                timeout=30.0  # Limit per-request wait to 30 seconds
+                timeout=60.0  # Limit per-request wait to 60 seconds
             )
             content = response.choices[0].message.content
             if "```json" in content:
@@ -46,9 +46,15 @@ def generate_topics(state: AgentState):
                 content = content.split("```")[1].split("```")[0].strip()
                 
             topics = json.loads(content, strict=False)
+            if isinstance(topics, list):
+                topics = [
+                    t.get("topic") or t.get("title") or t.get("name") or str(t)
+                    if isinstance(t, dict) else str(t)
+                    for t in topics
+                ]
             if not isinstance(topics, list) or len(topics) == 0:
                  topics = ["Phòng ngừa ung thư da", "Chăm sóc da mụn", "Lợi ích của Vitamin C"]
-            print("[LangGraph] Topics generated successfully via LLM.")
+            print(f"[LangGraph] Topics generated successfully via LLM: {topics}")
             break
         except Exception as e:
             print(f"[LangGraph] Topic generation attempt {attempt + 1} failed: {e}")
@@ -85,11 +91,11 @@ def write_blogs(state: AgentState):
         try:
             print(f"[LangGraph] Writing blogs - Attempt {attempt + 1}/3...")
             response = nv_client.chat.completions.create(
-                model="meta/llama-3.2-11b-vision-instruct",
+                model="nvidia/nemotron-3.5-bolt-e4b",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=3000,
                 temperature=0.7,
-                timeout=60.0  # Limit per-request wait to 60 seconds
+                timeout=120.0  # Limit per-request wait to 120 seconds
             )
             content = response.choices[0].message.content
             if "```json" in content:
@@ -187,7 +193,8 @@ workflow.add_edge("write_blogs", END)
 
 explore_app = workflow.compile()
 
-CACHE_FILE_PATH = os.path.join(os.environ.get("STORAGE_ROOT", "."), "explore_cache.json")
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+CACHE_FILE_PATH = os.path.join(os.environ.get("STORAGE_ROOT", CURRENT_DIR), "explore_cache.json")
 
 def load_cached_blogs():
     global LATEST_BLOG_POSTS
@@ -220,8 +227,7 @@ def run_explore_workflow():
 
 def get_latest_blogs():
     global LATEST_BLOG_POSTS
-    if not LATEST_BLOG_POSTS:
-        load_cached_blogs()
+    load_cached_blogs()
     return LATEST_BLOG_POSTS
 
 # Load cache on import

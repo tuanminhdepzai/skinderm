@@ -359,6 +359,75 @@ document.addEventListener("DOMContentLoaded", () => {
     const chatInput = document.getElementById("chatInput");
     const btnSendMessage = document.getElementById("btnSendMessage");
     const btnBackFromDoctor = document.getElementById("btnBackFromDoctor");
+    const toggleThinking = document.getElementById("toggleThinking");
+    const suggestionChips = document.querySelectorAll(".suggestion-chip");
+    const btnChatUpload = document.getElementById("btnChatUpload");
+    const btnChatVoice = document.getElementById("btnChatVoice");
+    const btnFlipCamera = document.getElementById("btnFlipCamera");
+
+    if (btnFlipCamera) {
+      btnFlipCamera.addEventListener("click", () => {
+        state.usingFrontCamera = !state.usingFrontCamera;
+        SCAN.stopCamera();
+        SCAN.startCamera(document.getElementById("webcam"));
+      });
+    }
+
+    if (toggleThinking) {
+      toggleThinking.addEventListener("change", (e) => {
+        state.isThinkingEnabled = e.target.checked;
+        document.querySelectorAll(".msg-thinking-container").forEach((el) => {
+          el.classList.toggle("hidden-thinking", !state.isThinkingEnabled);
+        });
+      });
+    }
+
+    suggestionChips.forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const query = chip.getAttribute("data-query");
+        if (query && chatInput) {
+          chatInput.value = query;
+          handleChatSend();
+        }
+      });
+    });
+
+    if (btnChatUpload) {
+      btnChatUpload.addEventListener("click", () => {
+        switchSection("sec-scan");
+        const fInput = document.getElementById("fileInput");
+        if (fInput) fInput.click();
+      });
+    }
+
+    if (btnChatVoice) {
+      btnChatVoice.addEventListener("click", () => {
+        const SpeechRecognition =
+          window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          alert("Trình duyệt của bạn không hỗ trợ nhận diện giọng nói.");
+          return;
+        }
+        const recognition = new SpeechRecognition();
+        recognition.lang = state.lang === "en" ? "en-US" : "vi-VN";
+        recognition.interimResults = false;
+        btnChatVoice.style.color = "var(--danger)";
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          if (chatInput) {
+            chatInput.value = (chatInput.value + " " + transcript).trim();
+            chatInput.focus();
+          }
+        };
+        recognition.onend = () => {
+          btnChatVoice.style.color = "";
+        };
+        recognition.onerror = () => {
+          btnChatVoice.style.color = "";
+        };
+        recognition.start();
+      });
+    }
 
     if (btnSendMessage) {
       btnSendMessage.addEventListener("click", () => {
@@ -371,7 +440,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (chatInput) {
-      chatInput.addEventListener("keypress", (e) => {
+      chatInput.addEventListener("input", () => {
+        chatInput.style.height = "auto";
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 200) + "px";
+      });
+      chatInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
           handleChatSend();
