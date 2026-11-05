@@ -12,13 +12,37 @@ class WeatherService {
      * Fast client-side location detection via IP (works without permission popups)
      */
     async detectLocationByIP() {
+        // 1. Primary IP Geo API: GeoJS
         try {
             const res = await fetch("https://get.geojs.io/v1/ip/geo.json");
             if (res.ok) {
                 const data = await res.json();
                 if (data.latitude && data.longitude) {
+                    const lat = parseFloat(data.latitude);
+                    const lon = parseFloat(data.longitude);
+                    // Prefer localized Vietnamese name from BigDataCloud if possible
+                    const localizedName = await this.getReverseGeocoding(lat, lon);
                     const city = data.city || data.region || "Việt Nam";
                     const country = data.country_code ? data.country_code.toUpperCase() : "VN";
+                    return {
+                        lat,
+                        lon,
+                        locationName: localizedName !== "Vị trí hiện tại" ? localizedName : `${city}, ${country}`
+                    };
+                }
+            }
+        } catch (e) {
+            console.warn("GeoJS IP detection error, trying fallback:", e);
+        }
+
+        // 2. Fallback IP Geo API: BigDataCloud (works without coordinates)
+        try {
+            const bdcRes = await fetch("https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=vi");
+            if (bdcRes.ok) {
+                const data = await bdcRes.json();
+                if (data.latitude && data.longitude) {
+                    const city = data.city || data.locality || data.principalSubdivision || "Việt Nam";
+                    const country = data.countryCode || "VN";
                     return {
                         lat: parseFloat(data.latitude),
                         lon: parseFloat(data.longitude),
@@ -27,8 +51,9 @@ class WeatherService {
                 }
             }
         } catch (e) {
-            console.warn("IP Geo detection error:", e);
+            console.warn("Fallback IP Geo detection error:", e);
         }
+
         return null;
     }
 
@@ -40,15 +65,21 @@ class WeatherService {
      */
     async getWeatherData(lat = 21.0285, lon = 105.8542, knownLocation = null) {
         try {
-            const url = `${this.baseUrl}?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code&hourly=uv_index&timezone=auto&forecast_days=1`;
-            const response = await fetch(url);
+            const url = `${this.baseUrl}?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,uv_index&hourly=uv_index&timezone=auto&forecast_days=1`;
+            const response = await fetch(url, { cache: "no-store" });
             if (!response.ok) throw new Error("Weather API Error");
             
             const data = await response.json();
             
-            // Get current UV index (closest hourly value)
+            // Get real-time UV index from current block (15-min resolution), fallback to hourly
             const hour = new Date().getHours();
-            const uvIndex = (data.hourly && data.hourly.uv_index) ? (data.hourly.uv_index[hour] || 0) : 0;
+            let uvIndex = 0;
+            if (data.current && typeof data.current.uv_index === "number") {
+                uvIndex = data.current.uv_index;
+            } else if (data.hourly && data.hourly.uv_index) {
+                uvIndex = data.hourly.uv_index[hour] ?? 0;
+            }
+            uvIndex = Math.round(uvIndex * 10) / 10;
 
             // Location Name resolution
             let locationName = knownLocation;
@@ -61,7 +92,8 @@ class WeatherService {
                 humidity: data.current.relative_humidity_2m,
                 weatherCode: data.current.weather_code,
                 uvIndex: uvIndex,
-                location: locationName || "Việt Nam"
+                location: locationName || "Việt Nam",
+                updatedAt: data.current.time
             };
         } catch (error) {
             console.error("Failed to fetch weather:", error);

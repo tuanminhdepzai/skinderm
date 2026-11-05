@@ -23,6 +23,11 @@ document.addEventListener("DOMContentLoaded", () => {
   UI.applyLanguage();
   initEventListeners();
 
+  // Start weather & date immediately so user doesn't wait for Firebase Auth
+  updateWeather();
+  // Auto-refresh weather & temperature every 10 minutes
+  setInterval(updateWeather, 10 * 60 * 1000);
+
   onAuthStateChanged(auth, async (firebaseUser) => {
     if (!firebaseUser) {
       window.location.href = "auth.html";
@@ -561,25 +566,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const tempEl = document.getElementById("tempValue");
         const uvEl = document.getElementById("uvValue");
+        const uvBadge = document.getElementById("uvBadge");
         const locEl = document.getElementById("weatherLocation");
         const adviceEl = document.getElementById("weatherAdvice");
 
-        if (tempEl) tempEl.textContent = Math.round(data.temp);
-        if (uvEl) uvEl.textContent = data.uvIndex;
-        if (locEl) locEl.textContent = data.location;
+        if (tempEl && data.temp !== undefined && data.temp !== null) {
+          tempEl.textContent = Math.round(data.temp);
+        }
+        if (uvEl && data.uvIndex !== undefined && data.uvIndex !== null) {
+          uvEl.textContent = data.uvIndex;
+        }
+        if (locEl && data.location) {
+          locEl.textContent = data.location;
+        }
 
         const theme = WeatherService.getWeatherTheme(
           data.weatherCode,
           data.uvIndex,
         );
         const advice = WeatherService.getUVAdvice(data.uvIndex);
-        if (adviceEl) adviceEl.textContent = advice.advice;
+        if (adviceEl) {
+          adviceEl.textContent = `UV ${advice.level}: ${advice.advice}`;
+        }
+        if (uvBadge && advice.color) {
+          uvBadge.style.color = advice.color;
+          uvBadge.style.background = `${advice.color}33`;
+          uvBadge.style.border = `1px solid ${advice.color}55`;
+        }
         state.currentWeather = data;
 
         const weatherVideo = document.getElementById("weatherVideo");
-        if (weatherVideo && !weatherVideo.src.includes(theme.video)) {
-          weatherVideo.src = `assets/video/${theme.video}`;
-          weatherVideo.load();
+        if (weatherVideo && theme.video) {
+          const targetSrc = `assets/video/${theme.video}`;
+          const sourceEl = weatherVideo.querySelector("source");
+          const currentSrc = (sourceEl && sourceEl.getAttribute("src")) || weatherVideo.getAttribute("src") || "";
+          if (!currentSrc.includes(theme.video)) {
+            if (sourceEl) sourceEl.setAttribute("src", targetSrc);
+            weatherVideo.src = targetSrc;
+            weatherVideo.load();
+            weatherVideo.play().catch(() => {});
+          }
         }
       } catch (err) {
         console.error("Weather Display Error:", err);
